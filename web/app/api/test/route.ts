@@ -79,7 +79,7 @@ function checkFakeIndicators(responseText: string, thinkingText: string = ""): R
   if (/根据我的系统提示|按照我的 response_style|查看提示后|我没有看到提供我的知识截止日期/i.test(combined)) {
     indicators["system_prompt_leak"] = true
   }
-  if (/[\ufffd]{3,}/.test(combined)) indicators["garbled"] = true
+  if (/[\ufffd]{3,}|�{3,}/.test(combined)) indicators["garbled"] = true
 
   return indicators
 }
