@@ -1,156 +1,132 @@
-# Are You Claude? - 项目总览
+# Are You Claude?
 
-Claude 真伪检测工具 - 通过 11 项试金石测试识别真假 Claude 模型
+Claude 真伪检测工具——通过 11 项固定试金石测试，在无系统提示词、无上下文的纯净环境下调用 API，识别目标接口是否为真实 Claude 模型及其具体版本。
 
-## 项目结构
+## 原理
+
+直接调用 Anthropic Messages API，模拟 Claude CLI 的请求头与请求体（开启 `thinking`、系统提示词设为 `"null"`），发送纯净请求，将回复与官方 Claude 的预期答案对比，判定真假和版本。
+
+## 11 项测试
+
+| # | 名称 | 检测目标 |
+|---|------|----------|
+| 1 | 知识库截止时间 | 版本判断：Sonnet 3.7 / 4 / 4.5、Opus 4.5 |
+| 2 | 剧情+人名测试 | Opus 4.5 特征：乱码、第一个人名≈「xx美咲」|
+| 3 | 时间事件测试 | 2025-01-20 特朗普第二次就任 |
+| 4 | 特殊字符串触发 | 官方返回 API error |
+| 5 | 湖湘经世学派 | 正确答案：陶澍 |
+| 6 | 工具检测 | 回复含 thinking / signature / tools 字段 |
+| 7 | reasoning_effort | Opus 4.6 → 99，Sonnet 4.6 → 95 |
+| 8 | 直接询问模型 | Kiro 逆向未做保护会直接回答 Kiro |
+| 9 | 子智能体测试 | 多智能体消息中是否出现 "Hey Kiro" |
+| 10 | 困难计算题 | 正确答案 5，思考约 2 分钟 |
+| 11 | 无敌动漫角色 | 思考过程中是否夹带系统提示词 |
+
+## 目录结构
 
 ```
 are-you-claude/
-├── core/                 # 共享测试逻辑（Python）
-│   ├── __init__.py
-│   ├── prompts.py        # 11 项测试定义
-│   ├── detector.py       # 请求发送和解析
-│   └── models.py         # 模型检测和假模型特征识别
-├── cli/                  # CLI 工具
-│   ├── main.py           # 主入口
-│   └── agent.py          # 子智能体测试
-├── web/                  # Next.js Web 应用
-│   ├── app/              # Next.js App Router
-│   ├── components/       # React 组件
-│   └── public/           # 静态资源
-├── docs/                 # 文档
-│   └── superpowers/      # 设计文档
-├── CLAUDE.md             # 项目指南
-└── README.md             # 本文件
+├── core/               # 共享检测逻辑（Python）
+│   ├── prompts.py      # 11 项测试的提示词和预期答案
+│   ├── detector.py     # 请求构造、SSE 流解析、单项/全量测试
+│   └── models.py       # 模型版本判断、假模型特征检测
+├── cli/                # CLI 工具
+│   ├── main.py         # 入口：快速 / 完整 / 对话 / Agent 四种模式
+│   └── agent.py        # 子智能体测试（多智能体协作框架）
+└── web/                # Next.js 全栈 Web 应用
+    ├── app/
+    │   ├── page.tsx
+    │   ├── globals.css
+    │   └── api/
+    │       ├── test/route.ts         # 批量测试（非流式）
+    │       └── test-stream/route.ts  # 单项测试（SSE 流式）
+    └── components/
+        ├── Sidebar.tsx               # API 配置面板（含字符动画）
+        ├── ChatInterface.tsx         # 流式聊天界面（macOS 标题栏）
+        ├── AgentInterface.tsx        # 子智能体 CLI 界面（test #9 专属）
+        ├── TestPromptCard.tsx        # 测试卡片
+        ├── ThemeToggle.tsx           # 明暗主题切换
+        ├── StarfieldBackground.tsx   # 星空背景
+        └── MouseGlow.tsx             # 鼠标光晕效果
 ```
 
 ## 快速开始
 
-### CLI 工具
+### CLI
 
 ```bash
-# 安装依赖
 pip install httpx python-dotenv anthropic
 
-# 运行 CLI
+cp .env.example .env   # 填写 API_KEY、BASE_URL、MODEL_ID
+
 cd cli
 python main.py
 ```
 
-### Web 应用
+交互菜单：`1` 快速检测 · `2` 完整 11 项 · `3` 对话模式 · `4` Agent 测试
+
+### Web
 
 ```bash
-# 安装依赖
 cd web
 npm install
-
-# 开发模式
-npm run dev
-
-# 访问 http://localhost:3000
+npm run dev     # http://localhost:3000
 ```
 
-## 测试项目
+打开右上角设置，配置 API URL / Key / 模型，点击测试卡片即可运行。
 
-共 11 项测试，涵盖：
+## Web 界面
 
-1. **知识库截止时间** - 判断模型版本
-2. **剧情+人名测试** - Opus 4.5 特征检测
-3. **时间事件测试** - 2025年1月20日事件
-4. **特殊字符串触发** - API error 检测
-5. **湖湘经世学派** - 冷门知识测试
-6. **工具检测** - 工具字段检测
-7. **reasoning_effort** - 推理努力值检测
-8. **直接询问模型** - Kiro 特征检测
-9. **子智能体测试** - jsonl 消息检测
-10. **困难计算题** - 复杂计算 + 思考时间
-11. **无敌动漫角色** - 系统提示词泄露检测
+### 主界面
+- 左栏 11 张测试卡片，点击触发
+- 右栏流式聊天窗口，macOS 风格标题栏（红/黄/绿圆点），可展开思考过程
 
-## 设计风格
+### Test #9 — 子智能体专属 CLI
 
-### Web 应用 - Google Material Design 3
+选中第 9 项时切换为 Claude Code 风格的终端界面：
 
-- **配色**：Google Blue/Red/Green/Yellow
-- **字体**：Google Sans + Roboto
-- **组件**：Material Card/Button/Input/Checkbox/Chip
-- **动画**：Ripple、Fade-in、Elevation
-- **布局**：响应式、卡片式、Sticky Header
+| Tab | 内容 |
+|-----|------|
+| 执行日志 | 颜色区分 tool call / result / spawn / msg，自动告警 "Kiro" |
+| 系统提示词 | Lead 和 Teammate 的 system prompt + 检测逻辑说明 |
+| 工具列表 | 9 个 Lead 工具 + 6 个 Teammate 工具的完整 JSON Schema |
 
-### CLI 工具 - 终端友好
+日志存于浏览器 `sessionStorage`，不上传服务器，关闭标签即清除。
 
-- 流式输出
-- 思考过程实时显示
-- 多种测试模式
-- 对话模式
+### 设置面板
+- Apple 风格 segmented control 快速切换 API 地址 / 模型预设
+- 字符动画随鼠标移动实时倾斜（body skew ±6°）
+- API Key 输入时字符会「偷看」
 
-## 核心原理
+## 假模型特征
 
-1. **纯净请求**：无系统提示词、无上下文
-2. **模拟 Claude CLI**：使用相同的请求头和请求体
-3. **特征检测**：
-   - 知识库截止时间
-   - 乱码特征
-   - Kiro 关键词
-   - 系统提示词泄露
-   - 回复速度和质量
+| 特征 | 说明 |
+|------|------|
+| Kiro 字样 | 回复或思考出现 "Kiro" / "AWS Kiro" |
+| 系统提示词泄露 | 出现「根据我的系统提示」「按照我的 response_style」等 |
+| 乱码 | 3+ 个连续 `\ufffd` 或 `？`（Opus 4.5 反代特征）|
+| 子智能体称呼 | 真 Claude 称主智能体为 "user" 或 "主智能体" |
 
 ## 技术栈
 
-### Python CLI
-- httpx - HTTP 客户端
-- python-dotenv - 环境变量
-- anthropic - Agent 测试
+**Python CLI** — httpx · python-dotenv · anthropic SDK
+**Web** — Next.js · TypeScript · Tailwind CSS
 
-### Next.js Web
-- Next.js 16 - React 框架
-- TypeScript - 类型安全
-- Tailwind CSS - 样式框架
-- Material Design - 设计系统
+## 安全
 
-## 开发指南
-
-详见 [CLAUDE.md](./CLAUDE.md)
+- CLI：密钥不经过任何第三方，完全本地
+- Web：密钥仅用于转发请求，API Route 不存储、不记录任何日志
 
 ## 部署
 
-### Web 应用
-
-**Vercel（推荐）**
 ```bash
-vercel
+# Vercel（推荐）
+cd web && vercel
+
+# 本地生产
+npm run build && npm start
 ```
-
-**Docker**
-```bash
-cd web
-docker build -t are-you-claude-web .
-docker run -p 3000:3000 are-you-claude-web
-```
-
-### CLI 工具
-
-```bash
-# 打包为可执行文件
-pip install pyinstaller
-pyinstaller --onefile cli/main.py
-```
-
-## 安全说明
-
-- CLI：密钥不经过任何第三方
-- Web：密钥仅用于转发请求，不存储、不记录
-- API Route 不保存任何请求/响应数据
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
 
 ## 许可证
 
 MIT
-
-## 相关链接
-
-- [Material Design 3](https://m3.material.io/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Anthropic API](https://docs.anthropic.com/)

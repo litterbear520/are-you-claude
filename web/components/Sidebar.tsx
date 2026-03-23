@@ -134,10 +134,32 @@ function WatchingCharacters({ hasKeyContent, isKeyVisible }: { hasKeyContent: bo
   const [purpleBlink, setPurpleBlink] = useState(false)
   const [blackBlink, setBlackBlink] = useState(false)
   const [purplePeeking, setPurplePeeking] = useState(false)
+  const [mouseX, setMouseX] = useState(0)
+  const [mouseY, setMouseY] = useState(0)
   const purpleRef = useRef<HTMLDivElement>(null)
   const blackRef = useRef<HTMLDivElement>(null)
   const yellowRef = useRef<HTMLDivElement>(null)
   const orangeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { setMouseX(e.clientX); setMouseY(e.clientY) }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  const calcPos = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return { faceX: 0, faceY: 0, bodySkew: 0 }
+    const r = ref.current.getBoundingClientRect()
+    const cx = r.left + r.width / 2
+    const cy = r.top + r.height / 3
+    const dx = mouseX - cx
+    const dy = mouseY - cy
+    return {
+      faceX: Math.max(-15, Math.min(15, dx / 20)),
+      faceY: Math.max(-10, Math.min(10, dy / 30)),
+      bodySkew: Math.max(-6, Math.min(6, -dx / 120)),
+    }
+  }
 
   // Random blinking for purple
   useEffect(() => {
@@ -179,11 +201,10 @@ function WatchingCharacters({ hasKeyContent, isKeyVisible }: { hasKeyContent: bo
     }
   }, [hasKeyContent, isKeyVisible, purplePeeking])
 
-  // Calculate body skew based on mouse position (simplified for modal context)
-  const purplePos = { bodySkew: 0, faceX: 0, faceY: 0 }
-  const blackPos = { bodySkew: 0, faceX: 0, faceY: 0 }
-  const yellowPos = { bodySkew: 0, faceX: 0, faceY: 0 }
-  const orangePos = { bodySkew: 0, faceX: 0, faceY: 0 }
+  const purplePos = calcPos(purpleRef)
+  const blackPos = calcPos(blackRef)
+  const yellowPos = calcPos(yellowRef)
+  const orangePos = calcPos(orangeRef)
 
   return (
     <div className="flex items-center justify-center flex-1" aria-hidden="true">
@@ -396,7 +417,6 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
             <p className="text-xs text-white/50">配置你的 Claude API</p>
           </div>
           <WatchingCharacters hasKeyContent={key.length > 0} isKeyVisible={showKey} />
-          <p className="text-xs text-white/30 text-center">他们在看着你</p>
         </div>
 
         {/* Right panel */}
@@ -410,7 +430,7 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
             </button>
           </div>
 
-          <div className="space-y-4 overflow-y-auto flex-1">
+          <div className="space-y-4 flex-1">
             {/* URL */}
             <div>
               <label htmlFor="api-url" className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
@@ -427,17 +447,13 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
                 autoComplete="url"
               />
               <div className="text-xs text-[var(--text-tertiary)] mt-2 mb-1.5">预设地址：</div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="segmented-control">
                 {URL_OPTIONS.map(u => (
                   <button
                     key={u.id}
                     type="button"
                     onClick={() => setUrl(u.value)}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                      url === u.value
-                        ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)]'
-                        : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-primary)]'
-                    }`}
+                    className={`segmented-item ${url === u.value ? 'active' : ''}`}
                   >
                     {u.name}
                   </button>
@@ -462,17 +478,13 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
                 spellCheck={false}
               />
               <div className="text-xs text-[var(--text-tertiary)] mt-2 mb-1.5">预设模型：</div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="segmented-control">
                 {MODEL_OPTIONS.map(m => (
                   <button
                     key={m.id}
                     type="button"
                     onClick={() => setModelId(m.value)}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                      modelId === m.value
-                        ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)]'
-                        : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-primary)]'
-                    }`}
+                    className={`segmented-item ${modelId === m.value ? 'active' : ''}`}
                   >
                     {m.name}
                   </button>

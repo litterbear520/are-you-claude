@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import ThemeToggle from '@/components/ThemeToggle'
 import TestPromptCard from '@/components/TestPromptCard'
 import ChatInterface from '@/components/ChatInterface'
+import AgentInterface from '@/components/AgentInterface'
 import StarfieldBackground from '@/components/StarfieldBackground'
 import MouseGlow from '@/components/MouseGlow'
 
@@ -229,17 +230,24 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Chat Interface */}
+          {/* Right: Chat / Agent Interface */}
           <div className="lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
             <div className="card h-full overflow-hidden">
-              <ChatInterface
-                testId={selectedTest?.id || null}
-                testName={selectedTest?.name || ''}
-                prompt={selectedTest?.prompt || ''}
-                expectedAnswer={selectedTest?.expected || ''}
-                config={config}
-                onComplete={noop}
-              />
+              {selectedTest?.id === 9 ? (
+                <AgentInterface
+                  config={config}
+                  prompt={selectedTest.prompt}
+                />
+              ) : (
+                <ChatInterface
+                  testId={selectedTest?.id || null}
+                  testName={selectedTest?.name || ''}
+                  prompt={selectedTest?.prompt || ''}
+                  expectedAnswer={selectedTest?.expected || ''}
+                  config={config}
+                  onComplete={noop}
+                />
+              )}
             </div>
           </div>
         </div>

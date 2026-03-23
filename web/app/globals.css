@@ -558,6 +558,55 @@ html {
   box-shadow: var(--shadow-glow);
 }
 
+/* Apple-style segmented control */
+.segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+}
+
+.segmented-item {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+  background: var(--surface-variant);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.segmented-item:hover:not(.active) {
+  background: var(--divider);
+  color: var(--text-primary);
+}
+
+.segmented-item:active {
+  transform: scale(0.97);
+}
+
+.segmented-item.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .segmented-item.active {
+  background: #3a3a3c;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+}
+
 /* Icon button */
 .icon-btn {
   width: 40px;

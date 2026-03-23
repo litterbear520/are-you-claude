@@ -26,13 +26,24 @@ are-you-claude/
 │   └── agent.py      # 子智能体测试（检测 jsonl 中是否出现 "Hey Kiro"）
 └── web/           # Next.js 全栈应用
     ├── app/
-    │   ├── page.tsx           # 首页
-    │   └── api/test/route.ts  # API 代理（转发请求到目标 API）
+    │   ├── page.tsx                 # 首页（测试卡片 + 聊天界面布局）
+    │   ├── globals.css              # 全局样式（含 segmented-control 苹果风格组件）
+    │   └── api/
+    │       ├── test/route.ts        # 批量测试 API（非流式，返回 TestResult[]）
+    │       └── test-stream/route.ts # 流式测试 API（SSE，用于 ChatInterface）
     └── components/
-        ├── TestForm.tsx       # 输入表单
-        ├── TestRunner.tsx     # 测试执行器
-        ├── ResultCard.tsx     # 结果卡片
-        └── CompareView.tsx    # 对比展示
+        ├── Sidebar.tsx              # 设置面板（API URL / Key / Model 配置，含字符动画）
+        ├── ChatInterface.tsx        # 聊天界面（流式展示，macOS 标题栏）
+        ├── AgentInterface.tsx       # 子智能体 CLI 界面（test #9 专属，Claude Code 风格）
+        ├── TestPromptCard.tsx       # 测试卡片（可点击触发测试）
+        ├── ThemeToggle.tsx          # 明暗主题切换按钮
+        ├── StarfieldBackground.tsx  # 星空背景动效
+        ├── MouseGlow.tsx            # 鼠标光晕跟随效果
+        ├── ApiKeyInput.tsx          # API Key 输入框（带显示/隐藏切换）
+        ├── TestForm.tsx             # 输入表单（旧）
+        ├── TestRunner.tsx           # 测试执行器（旧）
+        ├── ResultCard.tsx           # 结果卡片（旧）
+        └── CompareView.tsx          # 对比展示（旧）
 ```
 
 ### 核心模块

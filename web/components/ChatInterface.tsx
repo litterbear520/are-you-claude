@@ -179,14 +179,21 @@ export default function ChatInterface({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xs font-medium text-[var(--text-tertiary)] shrink-0">#{testId}</span>
-          <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{testName}</span>
+      {/* macOS-style title bar */}
+      <div className="relative flex items-center justify-center px-4 py-3 border-b border-[var(--border)] shrink-0">
+        {/* Traffic lights */}
+        <div className="absolute left-4 flex items-center gap-1.5" aria-hidden="true">
+          <span className="w-3 h-3 rounded-full bg-[#FF5F57]" />
+          <span className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
+          <span className="w-3 h-3 rounded-full bg-[#28C840]" />
         </div>
+        {/* Centered title */}
+        <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[60%]">
+          {testName || '未选择测试'}
+        </span>
+        {/* Running indicator */}
         {isStreaming && (
-          <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] shrink-0">
+          <div className="absolute right-4 flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
             <span className="inline-flex gap-0.5">
               <span className="w-1 h-1 rounded-full bg-[var(--accent-primary)] animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-1 h-1 rounded-full bg-[var(--accent-primary)] animate-bounce" style={{ animationDelay: '150ms' }} />
