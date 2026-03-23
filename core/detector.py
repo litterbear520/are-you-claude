@@ -110,8 +110,8 @@ def send_request(
     headers = build_headers(api_key)
     body = build_body(message, model_id, with_thinking)
 
-    full_response = ""
-    full_thinking = ""
+    response_parts = []
+    thinking_parts = []
     in_thinking = False
 
     try:
@@ -150,11 +150,11 @@ def send_request(
                                 delta = event.get("delta", {})
                                 if delta.get("type") == "text_delta":
                                     text = delta.get("text", "")
-                                    full_response += text
+                                    response_parts.append(text)
                                     yield ("", text)
                                 elif delta.get("type") == "thinking_delta":
                                     thinking_chunk = delta.get("thinking", "")
-                                    full_thinking += thinking_chunk
+                                    thinking_parts.append(thinking_chunk)
                                     yield (thinking_chunk, "")
                         except json.JSONDecodeError:
                             pass
@@ -183,16 +183,18 @@ def run_single_test(
 
     prompt = test["prompt"]
     expected = get_expected(test_id)
-    full_response = ""
-    full_thinking = ""
+    response_parts = []
+    thinking_parts = []
 
     for thinking_chunk, text_chunk in send_request(url, api_key, prompt, model_id, with_thinking):
         if text_chunk:
-            full_response += text_chunk
+            response_parts.append(text_chunk)
         if thinking_chunk:
-            full_thinking += thinking_chunk
+            thinking_parts.append(thinking_chunk)
         yield (thinking_chunk, text_chunk)
 
+    full_response = "".join(response_parts)
+    full_thinking = "".join(thinking_parts)
     detected_model = detect_model(full_response)
     fake_indicators = check_fake_indicators(full_response, full_thinking)
 
