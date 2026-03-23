@@ -430,7 +430,7 @@ html {
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
   width: 90%;
-  max-width: 860px;
+  max-width: 1080px;
   max-height: 90vh;
   border-radius: 20px;
   overflow: hidden;
@@ -445,10 +445,10 @@ html {
 }
 
 .modal-left {
-  width: 280px;
+  width: 380px;
   flex-shrink: 0;
   background: linear-gradient(160deg, #1a1040 0%, #0d0820 100%);
-  padding: 28px 20px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -457,8 +457,9 @@ html {
 
 .modal-right {
   flex: 1;
+  min-width: 0;
   background: var(--bg-card);
-  padding: 24px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;

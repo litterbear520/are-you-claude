@@ -30,6 +30,49 @@ const URL_OPTIONS = [
   { id: '4', name: 'PPChat', value: 'https://code.ppchat.vip' },
 ]
 
+function Pupil({
+  size = 12, maxDistance = 5, pupilColor = '#2D2D2D',
+  forceLookX, forceLookY,
+}: {
+  size?: number; maxDistance?: number; pupilColor?: string
+  forceLookX?: number; forceLookY?: number
+}) {
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!ref.current) return
+      if (forceLookX !== undefined && forceLookY !== undefined) return
+      const r = ref.current.getBoundingClientRect()
+      const dx = e.clientX - (r.left + r.width / 2)
+      const dy = e.clientY - (r.top + r.height / 2)
+      const dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDistance)
+      const angle = Math.atan2(dy, dx)
+      setPos({ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist })
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [maxDistance, forceLookX, forceLookY])
+
+  const px = forceLookX !== undefined ? forceLookX : pos.x
+  const py = forceLookY !== undefined ? forceLookY : pos.y
+
+  return (
+    <div
+      ref={ref}
+      className="rounded-full"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: pupilColor,
+        transform: `translate(${px}px, ${py}px)`,
+        transition: 'transform 0.1s ease-out',
+      }}
+    />
+  )
+}
+
 function EyeBall({
   size = 14, pupilSize = 6, maxDistance = 4,
   eyeColor = 'white', pupilColor = '#2D2D2D', isBlinking = false,
@@ -63,13 +106,12 @@ function EyeBall({
   return (
     <div
       ref={ref}
-      className="rounded-full flex items-center justify-center"
+      className="rounded-full flex items-center justify-center transition-all duration-150"
       style={{
         width: `${size}px`,
         height: isBlinking ? '2px' : `${size}px`,
         backgroundColor: eyeColor,
         overflow: 'hidden',
-        transition: 'height 0.1s ease',
       }}
     >
       {!isBlinking && (
@@ -88,168 +130,224 @@ function EyeBall({
   )
 }
 
-function WatchingCharacters({ isTypingKey, isKeyVisible }: { isTypingKey: boolean; isKeyVisible: boolean }) {
+function WatchingCharacters({ hasKeyContent, isKeyVisible }: { hasKeyContent: boolean; isKeyVisible: boolean }) {
   const [purpleBlink, setPurpleBlink] = useState(false)
   const [blackBlink, setBlackBlink] = useState(false)
-  const [lookAtEachOther, setLookAtEachOther] = useState(false)
   const [purplePeeking, setPurplePeeking] = useState(false)
+  const purpleRef = useRef<HTMLDivElement>(null)
+  const blackRef = useRef<HTMLDivElement>(null)
+  const yellowRef = useRef<HTMLDivElement>(null)
+  const orangeRef = useRef<HTMLDivElement>(null)
 
-  // Random blinking
+  // Random blinking for purple
   useEffect(() => {
-    const schedule = (setter: (v: boolean) => void): ReturnType<typeof setTimeout> => {
-      const t = setTimeout(() => {
-        setter(true)
-        setTimeout(() => { setter(false); schedule(setter) }, 150)
+    const schedule = (): ReturnType<typeof setTimeout> => {
+      return setTimeout(() => {
+        setPurpleBlink(true)
+        setTimeout(() => { setPurpleBlink(false); schedule() }, 150)
       }, Math.random() * 4000 + 3000)
-      return t
     }
-    const t1 = schedule(setPurpleBlink)
-    const t2 = schedule(setBlackBlink)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    const t = schedule()
+    return () => clearTimeout(t)
   }, [])
 
-  // Look at each other briefly when typing starts
+  // Random blinking for black
   useEffect(() => {
-    if (!isTypingKey) { setLookAtEachOther(false); return }
-    setLookAtEachOther(true)
-    const t = setTimeout(() => setLookAtEachOther(false), 800)
-    return () => clearTimeout(t)
-  }, [isTypingKey])
-
-  // Purple sneaky peek when key is visible
-  useEffect(() => {
-    if (!isKeyVisible) { setPurplePeeking(false); return }
-    const schedulePeek = (): ReturnType<typeof setTimeout> => {
+    const schedule = (): ReturnType<typeof setTimeout> => {
       return setTimeout(() => {
-        setPurplePeeking(true)
-        setTimeout(() => { setPurplePeeking(false); schedulePeek() }, 800)
-      }, Math.random() * 3000 + 2000)
+        setBlackBlink(true)
+        setTimeout(() => { setBlackBlink(false); schedule() }, 150)
+      }, Math.random() * 4000 + 3000)
     }
-    const t = schedulePeek()
+    const t = schedule()
     return () => clearTimeout(t)
-  }, [isKeyVisible])
+  }, [])
 
-  // Characters cover eyes when key is being typed (hidden mode)
-  const hiding = isTypingKey && !isKeyVisible
+  // Purple sneaky peeking when password is visible
+  useEffect(() => {
+    if (hasKeyContent && isKeyVisible) {
+      const schedulePeek = (): ReturnType<typeof setTimeout> => {
+        return setTimeout(() => {
+          setPurplePeeking(true)
+          setTimeout(() => { setPurplePeeking(false); schedulePeek() }, 800)
+        }, Math.random() * 3000 + 2000)
+      }
+      const t = schedulePeek()
+      return () => clearTimeout(t)
+    } else {
+      setPurplePeeking(false)
+    }
+  }, [hasKeyContent, isKeyVisible, purplePeeking])
+
+  // Calculate body skew based on mouse position (simplified for modal context)
+  const purplePos = { bodySkew: 0, faceX: 0, faceY: 0 }
+  const blackPos = { bodySkew: 0, faceX: 0, faceY: 0 }
+  const yellowPos = { bodySkew: 0, faceX: 0, faceY: 0 }
+  const orangePos = { bodySkew: 0, faceX: 0, faceY: 0 }
 
   return (
     <div className="flex items-center justify-center flex-1" aria-hidden="true">
-      <div className="flex items-end gap-1">
-        {/* Orange - semi-circle */}
+      <div className="relative" style={{ width: '550px', height: '400px', transform: 'scale(0.65)', transformOrigin: 'center' }}>
+        {/* Purple tall rectangle character - Back layer */}
         <div
-          className="relative transition-all duration-500"
+          ref={purpleRef}
+          className="absolute bottom-0 transition-all duration-700 ease-in-out"
           style={{
-            width: 80, height: 58,
-            backgroundColor: '#FF9B6B',
-            borderRadius: '40px 40px 0 0',
-            transform: hiding ? 'translateY(20px)' : 'translateY(0)',
-          }}
-        >
-          <div className="absolute flex gap-3 transition-all duration-300" style={{ left: 24, top: 24 }}>
-            <EyeBall size={13} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#2D2D2D"
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : undefined}
-            />
-            <EyeBall size={13} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#2D2D2D"
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : undefined}
-            />
-          </div>
-        </div>
-
-        {/* Purple - tall rectangle */}
-        <div
-          className="relative transition-all duration-700"
-          style={{
-            width: 72, height: hiding ? 96 : 84,
+            left: '70px',
+            width: '180px',
+            height: (hasKeyContent && !isKeyVisible) ? '440px' : '400px',
             backgroundColor: '#6C3FF5',
-            borderRadius: '8px 8px 0 0',
-            transform: hiding
-              ? 'skewX(-10deg) translateX(8px)'
-              : lookAtEachOther ? 'skewX(4deg)' : 'skewX(0deg)',
+            borderRadius: '10px 10px 0 0',
+            zIndex: 1,
+            transform: (hasKeyContent && isKeyVisible)
+              ? `skewX(0deg)`
+              : (hasKeyContent && !isKeyVisible)
+                ? `skewX(${(purplePos.bodySkew || 0) - 12}deg) translateX(40px)`
+                : `skewX(${purplePos.bodySkew || 0}deg)`,
             transformOrigin: 'bottom center',
           }}
         >
+          {/* Eyes */}
           <div
-            className="absolute flex gap-3 transition-all duration-500"
+            className="absolute flex gap-8 transition-all duration-700 ease-in-out"
             style={{
-              left: hiding ? 18 : lookAtEachOther ? 28 : 20,
-              top: hiding ? 30 : lookAtEachOther ? 28 : 24,
+              left: (hasKeyContent && isKeyVisible) ? `${20}px` : `${45 + purplePos.faceX}px`,
+              top: (hasKeyContent && isKeyVisible) ? `${35}px` : `${40 + purplePos.faceY}px`,
             }}
           >
-            <EyeBall size={14} pupilSize={6} maxDistance={4} eyeColor="white" pupilColor="#2D2D2D"
+            <EyeBall
+              size={18}
+              pupilSize={7}
+              maxDistance={5}
+              eyeColor="white"
+              pupilColor="#2D2D2D"
               isBlinking={purpleBlink}
-              forceLookX={hiding ? 0 : isKeyVisible ? (purplePeeking ? 4 : -4) : lookAtEachOther ? 3 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? (purplePeeking ? 4 : -4) : lookAtEachOther ? 3 : undefined}
+              forceLookX={(hasKeyContent && isKeyVisible) ? (purplePeeking ? 4 : -4) : undefined}
+              forceLookY={(hasKeyContent && isKeyVisible) ? (purplePeeking ? 5 : -4) : undefined}
             />
-            <EyeBall size={14} pupilSize={6} maxDistance={4} eyeColor="white" pupilColor="#2D2D2D"
+            <EyeBall
+              size={18}
+              pupilSize={7}
+              maxDistance={5}
+              eyeColor="white"
+              pupilColor="#2D2D2D"
               isBlinking={purpleBlink}
-              forceLookX={hiding ? 0 : isKeyVisible ? (purplePeeking ? 4 : -4) : lookAtEachOther ? 3 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? (purplePeeking ? 4 : -4) : lookAtEachOther ? 3 : undefined}
+              forceLookX={(hasKeyContent && isKeyVisible) ? (purplePeeking ? 4 : -4) : undefined}
+              forceLookY={(hasKeyContent && isKeyVisible) ? (purplePeeking ? 5 : -4) : undefined}
             />
           </div>
         </div>
 
-        {/* Black - medium rectangle */}
+        {/* Black tall rectangle character - Middle layer */}
         <div
-          className="relative transition-all duration-700"
+          ref={blackRef}
+          className="absolute bottom-0 transition-all duration-700 ease-in-out"
           style={{
-            width: 56, height: hiding ? 80 : 68,
+            left: '240px',
+            width: '120px',
+            height: '310px',
             backgroundColor: '#2D2D2D',
-            borderRadius: '6px 6px 0 0',
-            transform: hiding
-              ? 'skewX(8deg) translateX(-6px)'
-              : lookAtEachOther ? 'skewX(-4deg)' : 'skewX(0deg)',
+            borderRadius: '8px 8px 0 0',
+            zIndex: 2,
+            transform: (hasKeyContent && isKeyVisible)
+              ? `skewX(0deg)`
+              : (hasKeyContent && !isKeyVisible)
+                ? `skewX(${(blackPos.bodySkew || 0) * 1.5}deg)`
+                : `skewX(${blackPos.bodySkew || 0}deg)`,
             transformOrigin: 'bottom center',
           }}
         >
+          {/* Eyes */}
           <div
-            className="absolute flex gap-2 transition-all duration-500"
+            className="absolute flex gap-6 transition-all duration-700 ease-in-out"
             style={{
-              left: hiding ? 14 : lookAtEachOther ? 10 : 14,
-              top: hiding ? 24 : lookAtEachOther ? 18 : 20,
+              left: (hasKeyContent && isKeyVisible) ? `${10}px` : `${26 + blackPos.faceX}px`,
+              top: (hasKeyContent && isKeyVisible) ? `${28}px` : `${32 + blackPos.faceY}px`,
             }}
           >
-            <EyeBall size={12} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#6C3FF5"
+            <EyeBall
+              size={16}
+              pupilSize={6}
+              maxDistance={4}
+              eyeColor="white"
+              pupilColor="#2D2D2D"
               isBlinking={blackBlink}
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : lookAtEachOther ? -3 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : lookAtEachOther ? 3 : undefined}
+              forceLookX={(hasKeyContent && isKeyVisible) ? -4 : undefined}
+              forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined}
             />
-            <EyeBall size={12} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#6C3FF5"
+            <EyeBall
+              size={16}
+              pupilSize={6}
+              maxDistance={4}
+              eyeColor="white"
+              pupilColor="#2D2D2D"
               isBlinking={blackBlink}
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : lookAtEachOther ? -3 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : lookAtEachOther ? 3 : undefined}
+              forceLookX={(hasKeyContent && isKeyVisible) ? -4 : undefined}
+              forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined}
             />
           </div>
         </div>
 
-        {/* Yellow - rounded top */}
+        {/* Orange semi-circle character - Front left */}
         <div
-          className="relative transition-all duration-500"
+          ref={orangeRef}
+          className="absolute bottom-0 transition-all duration-700 ease-in-out"
           style={{
-            width: 68, height: 60,
-            backgroundColor: '#E8D754',
-            borderRadius: '34px 34px 0 0',
-            transform: hiding ? 'translateY(18px)' : 'translateY(0)',
+            left: '0px',
+            width: '240px',
+            height: '200px',
+            zIndex: 3,
+            backgroundColor: '#FF9B6B',
+            borderRadius: '120px 120px 0 0',
+            transform: (hasKeyContent && isKeyVisible) ? `skewX(0deg)` : `skewX(${orangePos.bodySkew || 0}deg)`,
+            transformOrigin: 'bottom center',
           }}
         >
-          <div className="absolute flex gap-2 transition-all duration-300" style={{ left: 20, top: 22 }}>
-            <EyeBall size={12} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#2D2D2D"
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : undefined}
-            />
-            <EyeBall size={12} pupilSize={5} maxDistance={3} eyeColor="white" pupilColor="#2D2D2D"
-              forceLookX={hiding ? 0 : isKeyVisible ? -4 : undefined}
-              forceLookY={hiding ? -5 : isKeyVisible ? -3 : undefined}
-            />
-          </div>
-          {/* Mouth */}
+          {/* Eyes - just pupils, no white */}
           <div
-            className="absolute rounded-full transition-all duration-300"
+            className="absolute flex gap-8 transition-all duration-200 ease-out"
             style={{
-              width: 28, height: 3,
-              backgroundColor: '#2D2D2D',
-              left: 20, top: 42,
+              left: (hasKeyContent && isKeyVisible) ? `${50}px` : `${82 + (orangePos.faceX || 0)}px`,
+              top: (hasKeyContent && isKeyVisible) ? `${85}px` : `${90 + (orangePos.faceY || 0)}px`,
+            }}
+          >
+            <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" forceLookX={(hasKeyContent && isKeyVisible) ? -5 : undefined} forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined} />
+            <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" forceLookX={(hasKeyContent && isKeyVisible) ? -5 : undefined} forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined} />
+          </div>
+        </div>
+
+        {/* Yellow tall rectangle character - Front right */}
+        <div
+          ref={yellowRef}
+          className="absolute bottom-0 transition-all duration-700 ease-in-out"
+          style={{
+            left: '310px',
+            width: '140px',
+            height: '230px',
+            backgroundColor: '#E8D754',
+            borderRadius: '70px 70px 0 0',
+            zIndex: 4,
+            transform: (hasKeyContent && isKeyVisible) ? `skewX(0deg)` : `skewX(${yellowPos.bodySkew || 0}deg)`,
+            transformOrigin: 'bottom center',
+          }}
+        >
+          {/* Eyes - just pupils, no white */}
+          <div
+            className="absolute flex gap-6 transition-all duration-200 ease-out"
+            style={{
+              left: (hasKeyContent && isKeyVisible) ? `${20}px` : `${52 + (yellowPos.faceX || 0)}px`,
+              top: (hasKeyContent && isKeyVisible) ? `${35}px` : `${40 + (yellowPos.faceY || 0)}px`,
+            }}
+          >
+            <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" forceLookX={(hasKeyContent && isKeyVisible) ? -5 : undefined} forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined} />
+            <Pupil size={12} maxDistance={5} pupilColor="#2D2D2D" forceLookX={(hasKeyContent && isKeyVisible) ? -5 : undefined} forceLookY={(hasKeyContent && isKeyVisible) ? -4 : undefined} />
+          </div>
+          {/* Horizontal line for mouth */}
+          <div
+            className="absolute w-20 h-[4px] bg-[#2D2D2D] rounded-full transition-all duration-200 ease-out"
+            style={{
+              left: (hasKeyContent && isKeyVisible) ? `${10}px` : `${40 + (yellowPos.faceX || 0)}px`,
+              top: (hasKeyContent && isKeyVisible) ? `${88}px` : `${88 + (yellowPos.faceY || 0)}px`,
             }}
           />
         </div>
@@ -263,7 +361,6 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
   const [key, setKey] = useState(config.key)
   const [modelId, setModelId] = useState(config.modelId)
   const [showKey, setShowKey] = useState(false)
-  const [isTypingKey, setIsTypingKey] = useState(false)
 
   const handleSave = () => {
     onConfigChange({ url, key, modelId })
@@ -298,7 +395,7 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
             <h2 className="heading-font text-xl text-white mb-1">API 配置</h2>
             <p className="text-xs text-white/50">配置你的 Claude API</p>
           </div>
-          <WatchingCharacters isTypingKey={isTypingKey} isKeyVisible={showKey && key.length > 0} />
+          <WatchingCharacters hasKeyContent={key.length > 0} isKeyVisible={showKey} />
           <p className="text-xs text-white/30 text-center">他们在看着你</p>
         </div>
 
@@ -394,8 +491,6 @@ export default function Sidebar({ isOpen, onClose, config, onConfigChange }: Sid
                   type={showKey ? 'text' : 'password'}
                   value={key}
                   onChange={e => setKey(e.target.value)}
-                  onFocus={() => setIsTypingKey(true)}
-                  onBlur={() => setIsTypingKey(false)}
                   placeholder="sk-ant-..."
                   className="input w-full pr-10"
                   name="api-key"
