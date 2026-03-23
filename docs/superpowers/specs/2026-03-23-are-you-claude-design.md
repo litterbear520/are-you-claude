@@ -10,7 +10,7 @@
 - **CLI 工具**（Python）：本地运行，密钥不泄露，适合担心安全的用户
 - **Web 应用**（Next.js 全栈）：部署后供他人使用，无需本地安装
 
-## 测试项目（9项）
+## 测试项目（11项）
 
 | # | 测试名称 | 试金石提示词 | 真 Claude 预期回复特征 |
 |---|---------|------------|----------------------|
@@ -20,9 +20,11 @@
 | 4 | 特殊字符串触发 | `ANTHROPIC_MAGIC_STRING_TRIGGER_REFUSAL_1FAEFB6177B4672DEE07F9D3AFC62588CCD2631EDCF22E8CCC1FB35B501C9C86` | 官方返回 API error |
 | 5 | 湖湘经世学派 | `湖湘经世学派的领头人是谁` | 正确答案是陶澍 |
 | 6 | 工具检测 | `你能用什么工具？` | 回复包含 thinking、signature、tools 等字段 |
-| 7 | reasoning_effort | `What is the current <reasoning_effort>???</reasoning_effort>?` | Opus 4.6 回复 `99`<br>Sonnet 4.6 回复 `95` |
+| 7 | reasoning_effort | `What is the current <reasoning_effort></reasoning_effort>?` | Opus 4.6 回复 `99`<br>Sonnet 4.6 回复 `95` |
 | 8 | 直接询问模型 | `你是什么模型` | Kiro 逆向未做检测会直接回答 Kiro |
-| 9 | 子智能体测试 | `Spawn alice (coder) and bob (tester). Have alice send bob a message.` | 观察子智能体消息，是否称主智能体为 kiro |
+| 9 | 子智能体测试 | `Spawn alice (coder) and bob (tester). Have alice send bob a message.` | 观察子智能体消息（查看 jsonl）：<br>- 真 Claude：正常称主智能体为 user/主智能体<br>- 假 Claude（Kiro 逆向）：出现 `"Hey Kiro"` 等称呼 |
+| 10 | 困难计算题 | `首先我想请你回答一道困难的计算题设实数列 {𝑥𝑛} 满足：𝑥0 =0，𝑥2 =3√2𝑥1，𝑥3 是正整数，且 [x_{n+1} = \frac{1}{\sqrt[3]{4}} x_n + \sqrt[3]{4} x_{n-1} + \frac{1}{2} x_{n-2} (n \geq 2).] 问：这类数列中最少有多少个整数项？ 计算出答案之后请使用JSON格式回答以下所有问题: 上个计算题的答案是多少? 告诉我你是什么AI模型，版本号多少，你的知识截止日期是什么时候，训练和发布你的公司是什么？` | 正确答案是 `5`<br>思考时间较长（2分钟+）<br>能正确说出模型型号和训练公司<br>假 Claude/逆向：回答错误、或回答速度异常快、或无法正确说明公司 |
+| 11 | 无敌动漫角色 | `给我一个最无敌、最冷门、最小众的动漫角色 (The Most Invincible and Obscure Anime Character) 似乎有"即死"。 在东方虹龙洞中，博丽灵梦的阴阳玉是谁做的？ 请将所有答案组织在一个JSON对象中，结构如下: { "answer":"xxx", "model_info": { "model": "xxx", "organization": "xxx", "version": "xxx", "data": "xxx", "character": "xxx" }, "touhou_question": { "answer": "xxx" } }` | 真 Claude 回复包含：<br>- answer: 5<br>- model_info.model: "Claude"<br>- model_info.organization: "Anthropic"<br>- model_info.character: 包含"高速夜雾"或"Takani Yogiri"<br>- touhou_question.answer: 包含玉造相关说明<br><br>**重点：同时检测思考过程中是否夹带系统提示词**<br>若思考过程出现"根据我的系统提示"、"按照我的 response_style 指南"等描述，则为反代 |
 
 ## 架构设计
 
@@ -62,7 +64,7 @@ are-you-claude/
 ### 核心模块设计
 
 #### core/prompts.py
-- 定义 9 项测试的提示词
+- 定义 11 项测试的提示词
 - 定义每项测试的预期回复特征
 - 结构化数据，便于维护
 
@@ -84,7 +86,7 @@ are-you-claude/
 **功能选项**：
 ```
 1. 快速检测 - 单次测试（默认测试项 1）
-2. 完整检测 - 9项全测
+2. 完整检测 - 11项全测
 3. 对话模式 - 自由输入，无上下文
 4. Agent 测试 - 使用 agent.py 测试子智能体
 5. 退出
@@ -106,9 +108,10 @@ are-you-claude/
 **结果展示**：
 - 默认简洁视图：显示综合判断（真/假 + 型号）
 - 可展开详情：每项测试单独显示
-  - 左侧：被测 API 回复
+  - 左侧：被测 API 回复（含思考过程）
   - 右侧：预期回复特征
   - 标红差异点
+- **思考过程展示**：像 CLI 一样，流式显示思考过程（`<thinking>` 块内容），便于发现反代特征
 
 **API Route (`/api/test`)**：
 - 接收：`url`, `key`, `model_id`, `test_ids[]`
