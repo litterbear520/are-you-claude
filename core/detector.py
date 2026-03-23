@@ -213,20 +213,13 @@ def run_single_test(
 def run_all_tests(
     url: str,
     api_key: str,
-    model_id: str,
-    show_thinking: bool = True
+    model_id: str
 ) -> list[TestResult]:
-    """Run all 11 tests."""
+    """Run all 11 tests and return results."""
     results = []
     for test_id in range(1, 12):
-        result = None
         for chunk_or_result in run_single_test(url, api_key, model_id, test_id, True):
             if isinstance(chunk_or_result, TestResult):
-                result = chunk_or_result
-            elif show_thinking and chunk_or_result[0]:
-                print(chunk_or_result[0], end="", flush=True)
-            elif chunk_or_result[1]:
-                print(chunk_or_result[1], end="", flush=True)
-        if result:
-            results.append(result)
+                results.append(chunk_or_result)
+                break
     return results
