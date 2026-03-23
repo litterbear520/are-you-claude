@@ -5,10 +5,7 @@ import os
 # Add parent dir to path for core import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core import (
-    get_test, run_single_test, run_all_tests,
-    MODEL_OPTIONS, TestResult
-)
+from core import get_test, MODEL_OPTIONS
 from core.detector import send_request
 
 def get_user_input() -> tuple:
@@ -38,14 +35,6 @@ def get_user_input() -> tuple:
             print(f"已选择: {model_name}")
             return url, key, model_id
         print("无效选择")
-
-def print_result(result: TestResult):
-    """Print a single test result."""
-    print(f"\n测试: {result.test_name}")
-    print(f"模型: {result.detected_model}")
-    if result.is_fake:
-        print(f"假模型特征: {result.fake_indicators}")
-    print(f"回复: {result.response[:200]}...")
 
 def run_quick_test(url: str, key: str, model_id: str):
     """Run test 1 only with streaming."""
