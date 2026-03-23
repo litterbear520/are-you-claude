@@ -57,7 +57,10 @@ export default function TestRunner({ results }: { results: TestResult[] }) {
               </div>
               {Object.keys(result.fake_indicators).length > 0 && (
                 <div className="text-red-600 text-sm">
-                  假模型特征: {Object.entries(result.fake_indicators).map(([k]) => k).join(', ')}
+                  假模型特征: {Object.entries(result.fake_indicators)
+                  .filter(([, v]) => v)
+                  .map(([k]) => k)
+                  .join(', ')}
                 </div>
               )}
             </div>
