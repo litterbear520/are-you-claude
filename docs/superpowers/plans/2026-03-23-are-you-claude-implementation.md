@@ -1191,80 +1191,13 @@ git commit -m "feat(web): scaffold Next.js app with test form, runner, and resul
 ## Task 4: Integrate Web with Core
 
 **Files:**
-- Modify: `web/app/api/test/route.ts` - call Python core via child_process
+- Modify: `web/app/api/test/route.ts` - TypeScript proxy implementation
 
-- [ ] **Step 1: Update `web/app/api/test/route.ts` to call Python core**
+- [ ] **Step 1: Create API route that acts as proxy with full detection logic**
 
-```typescript
-import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
-import { promisify } from 'util'
+The API route makes HTTP requests to the target API (acting as a proxy) and performs detection logic in TypeScript (mirroring `core/models.py`). This avoids subprocess complexity in Next.js.
 
-const exec = promisify((cmd: string, cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-  const child = spawn('python', ['-c', cmd], { shell: true })
-  let stdout = '', stderr = ''
-  child.stdout?.on('data', (d) => stdout += d)
-  child.stderr?.on('data', (d) => stderr += d)
-  child.on('close', (code) => cb(null, stdout, stderr))
-})
-
-export async function POST(req: NextRequest) {
-  try {
-    const { url, key, modelId, testType, testIds } = await req.json()
-
-    if (!url || !key || !modelId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    // Import core dynamically
-    const corePath = require.resolve('@/../../core/detector.py').replace(/\\/g, '/')
-    // Or use absolute path from env
-
-    // For streaming responses, we'd use a different approach with SSE
-    // For now, return structured results by calling Python synchronously
-
-    // Simple approach: run quick test
-    const testId = testType === 'quick' ? 1 : (testIds?.[0] || 1)
-
-    const pythonCode = `
-import sys
-sys.path.insert(0, '.')
-from core.detector import run_single_test
-import json
-
-result = run_single_test(
-    url="${url.replace(/"/g, '\\"')}",
-    api_key="${key.replace(/"/g, '\\"')}",
-    model_id="${modelId}",
-    test_id=${testId},
-    with_thinking=False,
-    show_thinking=False
-)
-
-print(json.dumps({
-    "test_id": result.test_id,
-    "test_name": result.test_name,
-    "response": result.response,
-    "thinking": result.thinking,
-    "detected_model": result.detected_model,
-    "is_fake": result.is_fake,
-    "fake_indicators": result.fake_indicators,
-    "details": result.details
-}, ensure_ascii=False))
-`
-
-    return NextResponse.json({ error: 'Web integration requires subprocess setup - see docs' }, { status: 501 })
-
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-```
-
-Actually, the API route integration with Python core is complex. Let me simplify - the Web should make HTTP requests similar to CLI but through the API route. The API route will act as a proxy.
-
-- [ ] **Step 2: Create a proper API route that acts as proxy with full detection logic**
+**Architecture note:** Detection logic is duplicated in TypeScript here and in `core/models.py`. Changes to detection must be kept in sync manually.
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
