@@ -10,9 +10,10 @@ interface TestPromptCardProps {
 
 export default function TestPromptCard({ id, name, prompt, description, onSelect }: TestPromptCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onSelect(id)}
-      className="test-card card p-5"
+      className="test-card card p-5 w-full text-left"
     >
       <div className="flex items-start gap-3 mb-3">
         <div className="badge badge-primary">
@@ -42,6 +43,6 @@ export default function TestPromptCard({ id, name, prompt, description, onSelect
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
         </svg>
       </div>
-    </div>
+    </button>
   )
 }
