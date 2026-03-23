@@ -1,8 +1,9 @@
 """Core detection logic - sends requests and parses responses."""
+import io
 import json
 import time
 from dataclasses import dataclass
-from typing import Optional, Generator, Tuple
+from typing import Optional, Generator, Tuple, Union
 
 import httpx
 
@@ -123,11 +124,14 @@ def send_request(
                     yield ("", f"API Error [{response.status_code}]: {error}")
                     return
 
-                buffer = ""
+                buffer = io.StringIO()
                 for chunk in response.iter_bytes():
-                    buffer += chunk.decode('utf-8', errors='ignore')
-                    while '\n' in buffer:
-                        line, buffer = buffer.split('\n', 1)
+                    buffer.write(chunk.decode('utf-8', errors='ignore'))
+                    while '\n' in buffer.getvalue():
+                        content = buffer.getvalue()
+                        line, remainder = content.split('\n', 1)
+                        buffer = io.StringIO()
+                        buffer.write(remainder)
                         line = line.strip()
                         if not line.startswith("data: "):
                             continue
@@ -166,17 +170,16 @@ def run_single_test(
     api_key: str,
     model_id: str,
     test_id: int,
-    with_thinking: bool = True,
-    show_thinking: bool = True
-) -> TestResult:
-    """Run a single test and return structured result."""
+    with_thinking: bool = True
+) -> Generator[Tuple[str, str], None, TestResult]:
+    """
+    Run a single test and yield (thinking_chunk, text_chunk) tuples.
+    Yields TestResult at the end.
+    """
     test = get_test(test_id)
     if not test:
-        return TestResult(
-            test_id=test_id, test_name="Unknown", prompt="",
-            response="", thinking="", detected_model="",
-            is_fake=False, fake_indicators={}, details={"error": "Test not found"}
-        )
+        yield ("", "")
+        return
 
     prompt = test["prompt"]
     expected = get_expected(test_id)
@@ -184,18 +187,16 @@ def run_single_test(
     full_thinking = ""
 
     for thinking_chunk, text_chunk in send_request(url, api_key, prompt, model_id, with_thinking):
-        if show_thinking and thinking_chunk:
-            print(thinking_chunk, end="", flush=True)
         if text_chunk:
-            print(text_chunk, end="", flush=True)
             full_response += text_chunk
         if thinking_chunk:
             full_thinking += thinking_chunk
+        yield (thinking_chunk, text_chunk)
 
     detected_model = detect_model(full_response)
     fake_indicators = check_fake_indicators(full_response, full_thinking)
 
-    return TestResult(
+    yield TestResult(
         test_id=test_id,
         test_name=test["name"],
         prompt=prompt,
@@ -216,9 +217,14 @@ def run_all_tests(
     """Run all 11 tests."""
     results = []
     for test_id in range(1, 12):
-        print(f"\n{'='*60}")
-        print(f"测试 {test_id}/11: {get_test(test_id)['name']}")
-        print(f"{'='*60}")
-        result = run_single_test(url, api_key, model_id, test_id, True, show_thinking)
-        results.append(result)
+        result = None
+        for chunk_or_result in run_single_test(url, api_key, model_id, test_id, True):
+            if isinstance(chunk_or_result, TestResult):
+                result = chunk_or_result
+            elif show_thinking and chunk_or_result[0]:
+                print(chunk_or_result[0], end="", flush=True)
+            elif chunk_or_result[1]:
+                print(chunk_or_result[1], end="", flush=True)
+        if result:
+            results.append(result)
     return results
