@@ -26,10 +26,14 @@ export default function TestForm({ onSubmit }: { onSubmit: (cfg: Config) => void
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-8 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <form onSubmit={handleSubmit} className="material-card p-6">
+      <h3 className="heading-font text-xl font-medium text-[var(--text-primary)] mb-6">
+        API 配置
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="block text-sm font-bold mb-2 text-[var(--accent-primary)]">
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
             API URL
           </label>
           <input
@@ -38,20 +42,20 @@ export default function TestForm({ onSubmit }: { onSubmit: (cfg: Config) => void
             onChange={e => setUrl(e.target.value)}
             placeholder="https://api.anthropic.com"
             required
-            className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-[var(--accent-primary)] outline-none transition-colors text-white placeholder-[var(--text-secondary)]"
+            className="input-material w-full"
           />
         </div>
         <div>
-          <label className="block text-sm font-bold mb-2 text-[var(--accent-primary)]">
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
             模型选择
           </label>
           <select
             value={modelId}
             onChange={e => setModelId(e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-[var(--accent-primary)] outline-none transition-colors text-white cursor-pointer"
+            className="input-material w-full cursor-pointer"
           >
             {MODEL_OPTIONS.map(m => (
-              <option key={m.id} value={m.value} className="bg-[var(--bg-secondary)]">
+              <option key={m.id} value={m.value}>
                 {m.name}
               </option>
             ))}
@@ -59,8 +63,8 @@ export default function TestForm({ onSubmit }: { onSubmit: (cfg: Config) => void
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-bold mb-2 text-[var(--accent-primary)]">
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
           API Key
         </label>
         <div className="relative">
@@ -70,12 +74,12 @@ export default function TestForm({ onSubmit }: { onSubmit: (cfg: Config) => void
             onChange={e => setKey(e.target.value)}
             placeholder="sk-ant-..."
             required
-            className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-[var(--accent-primary)] outline-none transition-colors text-white placeholder-[var(--text-secondary)] pr-24"
+            className="input-material w-full pr-20"
           />
           <button
             type="button"
             onClick={() => setShowKey(!showKey)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors text-sm"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm font-medium"
           >
             {showKey ? '隐藏' : '显示'}
           </button>
@@ -84,7 +88,7 @@ export default function TestForm({ onSubmit }: { onSubmit: (cfg: Config) => void
 
       <button
         type="submit"
-        className="btn-primary w-full"
+        className="btn-material btn-material-filled w-full"
       >
         保存配置并继续
       </button>

@@ -80,57 +80,72 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-6 md:p-12">
-      {/* Background effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-[var(--accent-primary)] opacity-10 blur-[100px] rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-[var(--accent-secondary)] opacity-10 blur-[100px] rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[var(--accent-danger)] opacity-5 blur-[120px] rounded-full"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="text-center mb-12 animate-slide-in">
-          <div className="inline-block mb-4 px-4 py-2 bg-[var(--accent-primary)] bg-opacity-10 border border-[var(--accent-primary)] rounded-full">
-            <span className="text-[var(--accent-primary)] text-sm font-bold uppercase tracking-wider">
-              Claude 真伪检测工具
-            </span>
+    <main className="min-h-screen bg-[var(--bg-secondary)]">
+      {/* Header */}
+      <header className="bg-[var(--bg-card)] border-b border-[var(--border)] sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[var(--accent-primary)] flex items-center justify-center text-white font-bold text-lg">
+              A
+            </div>
+            <div>
+              <h1 className="heading-font text-xl font-medium text-[var(--text-primary)]">
+                Are You Claude?
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)]">Claude 真伪检测工具</p>
+            </div>
           </div>
-          <h1 className="heading-font text-6xl md:text-7xl font-black mb-4">
-            <span className="gradient-text">Are You Claude?</span>
-          </h1>
-          <p className="text-[var(--text-secondary)] text-lg md:text-xl max-w-2xl mx-auto">
-            通过 11 项试金石测试，在无系统提示词、无上下文的纯净环境下识别真假 Claude 模型
-          </p>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Hero Section */}
+        <div className="mb-8 animate-fade-in">
+          <div className="material-card p-8 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary-light)] rounded-full mb-4">
+              <span className="w-2 h-2 bg-[var(--accent-primary)] rounded-full"></span>
+              <span className="text-sm font-medium text-[var(--accent-primary)]">11 项专业测试</span>
+            </div>
+            <h2 className="heading-font text-3xl md:text-4xl font-medium text-[var(--text-primary)] mb-3">
+              通过试金石测试识别真假 Claude
+            </h2>
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">
+              在无系统提示词、无上下文的纯净环境下测试 API，准确判断模型版本和真伪
+            </p>
+          </div>
         </div>
 
         {/* Config Form */}
-        <div className="mb-12 animate-slide-in" style={{ animationDelay: '0.1s' }}>
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <TestForm onSubmit={(cfg) => setConfig(cfg)} />
         </div>
 
         {config && (
           <>
             {/* Test Selection Header */}
-            <div className="mb-6 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-              <div className="glass-card p-6">
+            <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <div className="material-card p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h2 className="heading-font text-3xl font-bold mb-2">选择测试项</h2>
-                    <p className="text-[var(--text-secondary)]">
-                      已选择 <span className="text-[var(--accent-primary)] font-bold text-xl">{selectedTests.length}</span> / {TEST_ITEMS.length} 项
-                    </p>
+                    <h3 className="heading-font text-2xl font-medium text-[var(--text-primary)] mb-2">
+                      选择测试项
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--text-secondary)]">已选择</span>
+                      <span className="badge-material">{selectedTests.length}</span>
+                      <span className="text-[var(--text-secondary)]">/ {TEST_ITEMS.length} 项</span>
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={selectAll}
-                      className="px-6 py-3 border border-[var(--border)] rounded-lg hover:border-[var(--accent-primary)] hover:bg-[var(--accent-primary)] hover:bg-opacity-10 transition-all font-bold"
+                      className="btn-material btn-material-outlined"
                     >
                       全选
                     </button>
                     <button
                       onClick={clearAll}
-                      className="px-6 py-3 border border-[var(--border)] rounded-lg hover:border-[var(--accent-danger)] hover:bg-[var(--accent-danger)] hover:bg-opacity-10 transition-all font-bold"
+                      className="btn-material btn-material-text"
                     >
                       清空
                     </button>
@@ -144,7 +159,7 @@ export default function Home() {
               {TEST_ITEMS.map((test, index) => (
                 <div
                   key={test.id}
-                  className="animate-slide-in"
+                  className="animate-fade-in"
                   style={{ animationDelay: `${0.3 + index * 0.05}s` }}
                 >
                   <TestCard
@@ -159,20 +174,16 @@ export default function Home() {
             </div>
 
             {/* Run Test Button */}
-            <div className="flex flex-col items-center gap-4 mb-12 animate-slide-in" style={{ animationDelay: '0.9s' }}>
+            <div className="flex flex-col items-center gap-4 mb-12 animate-fade-in" style={{ animationDelay: '0.9s' }}>
               <button
                 onClick={handleTest}
                 disabled={running || selectedTests.length === 0}
-                className="btn-primary text-lg px-12 py-4 relative"
+                className="btn-material btn-material-filled px-8 py-3 text-base"
               >
                 {running ? (
                   <span className="flex items-center gap-3">
-                    <span>测试中</span>
-                    <span className="loading-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </span>
+                    <span className="loading-spinner"></span>
+                    <span>测试中...</span>
                   </span>
                 ) : (
                   `开始测试 (${selectedTests.length}项)`
@@ -190,12 +201,14 @@ export default function Home() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-8 animate-slide-in">
-            <div className="glass-card p-6 border-[var(--accent-danger)] bg-[var(--accent-danger)] bg-opacity-10">
+          <div className="mb-8 animate-fade-in">
+            <div className="material-card p-6 border-l-4 border-[var(--accent-danger)] bg-[var(--accent-danger-light)]">
               <div className="flex items-start gap-3">
-                <span className="text-[var(--accent-danger)] text-2xl">⚠</span>
+                <svg className="w-6 h-6 text-[var(--accent-danger)] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
                 <div>
-                  <h3 className="text-[var(--accent-danger)] font-bold mb-1">测试失败</h3>
+                  <h3 className="text-[var(--accent-danger)] font-medium mb-1">测试失败</h3>
                   <p className="text-[var(--text-secondary)]">{error}</p>
                 </div>
               </div>
@@ -205,18 +218,18 @@ export default function Home() {
 
         {/* Results */}
         {results && (
-          <div className="animate-slide-in">
+          <div className="animate-fade-in">
             <TestRunner results={results} />
           </div>
         )}
 
         {/* Footer */}
-        <footer className="mt-20 text-center text-[var(--text-secondary)] text-sm">
-          <div className="glass-card p-6 inline-block">
-            <p className="mb-2">
+        <footer className="mt-20 text-center">
+          <div className="material-card p-6 inline-block">
+            <p className="text-[var(--text-secondary)] text-sm mb-2">
               本工具通过发送纯净请求（无系统提示词、无上下文）来检测 API 真伪
             </p>
-            <p>
+            <p className="text-[var(--text-tertiary)] text-xs">
               密钥仅用于转发请求，不会被存储或记录
             </p>
           </div>
