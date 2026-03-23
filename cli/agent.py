@@ -336,7 +336,8 @@ def agent_loop(messages: list):
         messages.append({"role": "user", "content": results})
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point when run directly."""
     history = []
     while True:
         try:
