@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default function RootLayout({
         {/* Inline script to set data-theme before first paint, preventing flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);}else if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})()` }} />
       </head>
-      <body className="antialiased">{children}<Analytics /></body>
+      <body className="antialiased">{children}<Analytics /><SpeedInsights /></body>
     </html>
   )
 }
