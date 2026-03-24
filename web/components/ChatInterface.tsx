@@ -74,6 +74,7 @@ export default function ChatInterface({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   // Use ref to track streaming state to avoid stale closures in useCallback
   const isStreamingRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -110,6 +111,9 @@ export default function ChatInterface({
     if (!config.url || !config.key || isStreamingRef.current) return
 
     isStreamingRef.current = true
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
     setInputValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -131,7 +135,8 @@ export default function ChatInterface({
       const response = await fetch('/api/test-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: config.url, key: config.key, modelId: config.modelId, prompt: text, testId: null })
+        body: JSON.stringify({ url: config.url, key: config.key, modelId: config.modelId, prompt: text, testId: null }),
+        signal: abortController.signal
       })
 
       if (!response.ok) throw new Error(`API 错误: ${response.status}`)
@@ -204,26 +209,42 @@ export default function ChatInterface({
         }
       }
     } catch (error) {
-      console.error('Test error:', error)
-      // On error, still commit partial content if we have any
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
-      const thinking = thinkingRef.current
-      const resp = responseRef.current
-      if (thinking || resp) {
-        setMessages(() => {
-          const next: Message[] = [...baseMessages]
-          if (thinking) next.push({ id: 'thinking', role: 'thinking', content: thinking })
-          if (resp) next.push({ id: 'assistant', role: 'assistant', content: resp })
-          return next
-        })
+      // Ignore abort errors — user intentionally stopped, partial content already committed
+      if (error instanceof Error && error.name === 'AbortError') {
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
+        const thinking = thinkingRef.current
+        const resp = responseRef.current
+        if (thinking || resp) {
+          setMessages(() => {
+            const next: Message[] = [...baseMessages]
+            if (thinking) next.push({ id: 'thinking', role: 'thinking', content: thinking })
+            if (resp) next.push({ id: 'assistant', role: 'assistant', content: resp })
+            return next
+          })
+        }
       } else {
-        setMessages(prev => [
-          ...prev,
-          { id: 'error', role: 'assistant', content: `错误: ${error instanceof Error ? error.message : '请求失败'}` }
-        ])
+        console.error('Test error:', error)
+        // On error, still commit partial content if we have any
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
+        const thinking = thinkingRef.current
+        const resp = responseRef.current
+        if (thinking || resp) {
+          setMessages(() => {
+            const next: Message[] = [...baseMessages]
+            if (thinking) next.push({ id: 'thinking', role: 'thinking', content: thinking })
+            if (resp) next.push({ id: 'assistant', role: 'assistant', content: resp })
+            return next
+          })
+        } else {
+          setMessages(prev => [
+            ...prev,
+            { id: 'error', role: 'assistant', content: `错误: ${error instanceof Error ? error.message : '请求失败'}` }
+          ])
+        }
       }
     } finally {
       isStreamingRef.current = false
+      abortControllerRef.current = null
       setIsStreaming(false)
       onComplete()
     }
@@ -247,6 +268,10 @@ export default function ChatInterface({
     thinkingRef.current = ''
     responseRef.current = ''
   }
+
+  const handleAbort = useCallback(() => {
+    abortControllerRef.current?.abort()
+  }, [])
 
   const isEmpty = messages.length === 0 && !isStreaming
 
@@ -329,6 +354,12 @@ export default function ChatInterface({
             )
           })
         )}
+        {/* Jumping Claude indicator while waiting for first response token */}
+        {isStreaming && messages.length <= 1 && (
+          <div className="flex justify-start gap-3 items-end">
+            <img src="/claude-jumping.svg" alt="思考中" className="w-10 h-auto" />
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -350,7 +381,7 @@ export default function ChatInterface({
       {/* Input area — Claude Code style */}
       <div className="px-4 pb-4 pt-2 shrink-0">
         <div className={`flex items-end gap-2 rounded-2xl border px-4 py-3 transition-colors ${
-          isStreaming ? 'border-[var(--border)] opacity-60' : 'border-[var(--border)] focus-within:border-[var(--accent-primary)]'
+          isStreaming ? 'border-[var(--border)]' : 'border-[var(--border)] focus-within:border-[var(--accent-primary)]'
         } bg-[var(--surface-variant)]`}>
           <textarea
             ref={textareaRef}
@@ -360,19 +391,32 @@ export default function ChatInterface({
             placeholder={config.key ? '输入消息… (Enter 发送，Shift+Enter 换行)' : '请先配置 API Key'}
             disabled={isStreaming || !config.key}
             rows={1}
-            className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] resize-none outline-none focus:outline-none focus-visible:outline-none leading-relaxed"
+            className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] resize-none outline-none focus:outline-none focus-visible:outline-none leading-relaxed disabled:opacity-50"
             style={{ maxHeight: '200px' }}
           />
-          <button
-            onClick={() => { if (inputValue.trim()) sendMessage(inputValue.trim()) }}
-            disabled={!inputValue.trim() || isStreaming || !config.key}
-            className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors disabled:opacity-30 bg-[var(--accent-primary)] text-white hover:opacity-90 disabled:cursor-not-allowed"
-            aria-label="发送"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
+          {isStreaming ? (
+            <button
+              onClick={handleAbort}
+              className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors bg-[var(--accent-danger)] text-white hover:opacity-90"
+              aria-label="停止响应"
+              title="停止响应"
+            >
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() => { if (inputValue.trim()) sendMessage(inputValue.trim()) }}
+              disabled={!inputValue.trim() || !config.key}
+              className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors disabled:opacity-30 bg-[var(--accent-primary)] text-white hover:opacity-90 disabled:cursor-not-allowed"
+              aria-label="发送"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
         </div>
         <p className="text-center text-[10px] text-[var(--text-tertiary)] mt-2">
           无系统提示词 · 无上下文 · 纯净请求
