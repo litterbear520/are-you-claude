@@ -124,13 +124,15 @@ export default function ChatInterface({
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
 
       while (reader) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
@@ -138,14 +140,14 @@ export default function ChatInterface({
             const data = JSON.parse(line.slice(6))
             if (data.type === 'thinking_delta') {
               thinkingRef.current += data.content
-              if (rafRef.current) return
+              if (rafRef.current) cancelAnimationFrame(rafRef.current)
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
                 flushMessages(baseMessages)
               })
             } else if (data.type === 'text_delta') {
               responseRef.current += data.content
-              if (rafRef.current) return
+              if (rafRef.current) cancelAnimationFrame(rafRef.current)
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
                 flushMessages(baseMessages)
