@@ -75,6 +75,7 @@ export default function ChatInterface({
   // Use ref to track streaming state to avoid stale closures in useCallback
   const isStreamingRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const [hasContent, setHasContent] = useState(false)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -121,6 +122,7 @@ export default function ChatInterface({
 
     thinkingRef.current = ''
     responseRef.current = ''
+    setHasContent(false)
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
 
     const userMsg: Message = { id: `user-${Date.now()}`, role: 'user', content: text }
@@ -159,6 +161,7 @@ export default function ChatInterface({
             const data = JSON.parse(line.slice(6))
             if (data.type === 'thinking_delta') {
               thinkingRef.current += data.content
+              setHasContent(true)
               if (rafRef.current) cancelAnimationFrame(rafRef.current)
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
@@ -167,6 +170,7 @@ export default function ChatInterface({
               })
             } else if (data.type === 'text_delta') {
               responseRef.current += data.content
+              setHasContent(true)
               if (rafRef.current) cancelAnimationFrame(rafRef.current)
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
@@ -265,6 +269,7 @@ export default function ChatInterface({
     setMessages([])
     setActiveTestName('')
     setActiveExpected('')
+    setHasContent(false)
     thinkingRef.current = ''
     responseRef.current = ''
   }
@@ -354,10 +359,17 @@ export default function ChatInterface({
             )
           })
         )}
-        {/* Jumping Claude indicator while waiting for first response token */}
-        {isStreaming && messages.length <= 1 && (
+        {/* Waiting indicator: static Claude with bouncing dots before first content arrives */}
+        {isStreaming && !hasContent && (
           <div className="flex justify-start gap-3 items-end">
-            <img src="/claude-jumping.svg" alt="思考中" className="w-10 h-auto" />
+            <div className="relative">
+              <img src="/claude-pointing.svg" alt="思考中" className="w-8 h-auto opacity-70" />
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
           </div>
         )}
         <div ref={messagesEndRef} />
