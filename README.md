@@ -70,10 +70,10 @@ cd cli && python main.py
 
 | 社区 | 帖子 |
 |------|------|
-| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [假Claude辨别指南 - 如何辨别假Claude](https://linux.do/t/topic/1702676/8) |
-| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [Claude API中间商调查报告](https://linux.do/t/topic/1491552) |
-| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [教你识别假Claude反代服务](https://linux.do/t/topic/1628136/3) |
-| <img src="https://www.v2ex.com/static/img/favicon.png" width="16" height="16" alt="V2"> **V2EX** | [如何判断自己用的 Claude API 是否为真实模型](https://www.v2ex.com/t/1200135#reply53) |
+| ![Linux DO](https://img.shields.io/badge/Linux%20DO-FF6C2C?style=flat&logo=linux&logoColor=white) | [假Claude辨别指南 - 如何辨别假Claude](https://linux.do/t/topic/1702676/8) |
+| ![Linux DO](https://img.shields.io/badge/Linux%20DO-FF6C2C?style=flat&logo=linux&logoColor=white) | [Claude API中间商调查报告](https://linux.do/t/topic/1491552) |
+| ![Linux DO](https://img.shields.io/badge/Linux%20DO-FF6C2C?style=flat&logo=linux&logoColor=white) | [教你识别假Claude反代服务](https://linux.do/t/topic/1628136/3) |
+| ![V2EX](https://img.shields.io/badge/V2EX-394856?style=flat&logoColor=white) | [如何判断自己用的 Claude API 是否为真实模型](https://www.v2ex.com/t/1200135#reply53) |
 
 ## 致谢
 
