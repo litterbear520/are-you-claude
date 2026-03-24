@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Extend Vercel serverless function timeout to 300 seconds
+export const maxDuration = 300
+
 const DEFAULT_CONFIG = {
   max_tokens: 32000,
   thinking_budget: 31999

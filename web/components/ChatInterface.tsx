@@ -20,6 +20,14 @@ interface ChatInterfaceProps {
 
 function ThinkingBlock({ content, streaming }: { content: string; streaming?: boolean }) {
   const [open, setOpen] = useState(true)
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll thinking content to bottom while streaming
+  useEffect(() => {
+    if (streaming && open && bodyRef.current) {
+      bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+    }
+  }, [content, streaming, open])
 
   return (
     <div className="my-3">
@@ -38,7 +46,7 @@ function ThinkingBlock({ content, streaming }: { content: string; streaming?: bo
         {streaming && <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)] animate-pulse" />}
       </button>
       {open && (
-        <div className="mt-2 p-3 rounded-lg bg-[var(--surface-variant)] border border-[var(--border)] text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+        <div ref={bodyRef} className="mt-2 p-3 rounded-lg bg-[var(--surface-variant)] border border-[var(--border)] text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
           {content}
         </div>
       )}
@@ -64,6 +72,8 @@ export default function ChatInterface({
   const responseRef = useRef('')
   const rafRef = useRef<number>()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Use ref to track streaming state to avoid stale closures in useCallback
+  const isStreamingRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -90,15 +100,16 @@ export default function ChatInterface({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (inputValue.trim() && !isStreaming) {
+      if (inputValue.trim() && !isStreamingRef.current) {
         sendMessage(inputValue.trim())
       }
     }
   }
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!config.url || !config.key || isStreaming) return
+    if (!config.url || !config.key || isStreamingRef.current) return
 
+    isStreamingRef.current = true
     setInputValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -112,6 +123,9 @@ export default function ChatInterface({
     const baseMessages = [userMsg]
     setMessages(baseMessages)
     setIsStreaming(true)
+
+    // Track whether we received a proper 'done' event
+    let receivedDone = false
 
     try {
       const response = await fetch('/api/test-stream', {
@@ -144,6 +158,7 @@ export default function ChatInterface({
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
                 flushMessages(baseMessages)
+                scrollToBottom()
               })
             } else if (data.type === 'text_delta') {
               responseRef.current += data.content
@@ -151,8 +166,10 @@ export default function ChatInterface({
               rafRef.current = requestAnimationFrame(() => {
                 rafRef.current = undefined
                 flushMessages(baseMessages)
+                scrollToBottom()
               })
             } else if (data.type === 'done') {
+              receivedDone = true
               if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
               const thinking = thinkingRef.current
               const resp = responseRef.current
@@ -169,17 +186,48 @@ export default function ChatInterface({
           }
         }
       }
+
+      // Fallback: if stream ended without a 'done' event (e.g. timeout/truncation),
+      // commit whatever we have so the UI doesn't get stuck
+      if (!receivedDone) {
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
+        const thinking = thinkingRef.current
+        const resp = responseRef.current
+        if (thinking || resp) {
+          setMessages(() => {
+            const next: Message[] = [...baseMessages]
+            if (thinking) next.push({ id: 'thinking', role: 'thinking', content: thinking })
+            if (resp) next.push({ id: 'assistant', role: 'assistant', content: resp })
+            return next
+          })
+          scrollToBottom()
+        }
+      }
     } catch (error) {
       console.error('Test error:', error)
-      setMessages(prev => [
-        ...prev,
-        { id: 'error', role: 'assistant', content: `错误: ${error instanceof Error ? error.message : '请求失败'}` }
-      ])
+      // On error, still commit partial content if we have any
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = undefined }
+      const thinking = thinkingRef.current
+      const resp = responseRef.current
+      if (thinking || resp) {
+        setMessages(() => {
+          const next: Message[] = [...baseMessages]
+          if (thinking) next.push({ id: 'thinking', role: 'thinking', content: thinking })
+          if (resp) next.push({ id: 'assistant', role: 'assistant', content: resp })
+          return next
+        })
+      } else {
+        setMessages(prev => [
+          ...prev,
+          { id: 'error', role: 'assistant', content: `错误: ${error instanceof Error ? error.message : '请求失败'}` }
+        ])
+      }
     } finally {
+      isStreamingRef.current = false
       setIsStreaming(false)
       onComplete()
     }
-  }, [config, isStreaming, flushMessages, scrollToBottom, onComplete])
+  }, [config, flushMessages, scrollToBottom, onComplete])
 
   // Run test when testId/prompt changes
   useEffect(() => {
