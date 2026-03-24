@@ -1,6 +1,16 @@
 # Are You Claude?
 
-Claude 真伪检测工具——在无系统提示词、无上下文的纯净环境下调用 API，通过 10 项固定测试识别目标接口是否为真实 Claude 及其版本。
+Claude 真伪检测工具——在无系统提示词、无上下文的纯净环境下调用 API，通过 11 项固定测试识别目标接口是否为真实 Claude 及其版本。
+
+## 在线体验
+
+**🌐 直接访问：[claude.huangsitao.fun](https://claude.huangsitao.fun)**
+
+> **重要声明**
+>
+> 本服务使用 Vercel 部署，**不会记录任何 API 密钥或请求内容**。密钥仅在你的浏览器中填写，由前端直接发送至你填写的 API 地址，不经过任何服务器存储。
+>
+> **如仍有顾虑，请选择本地启动（见下方 CLI 或本地 Web 方式）。**
 
 ## 原理
 
@@ -55,6 +65,19 @@ cd cli && python main.py
 
 - Web：密钥仅用于转发请求，API Route 不存储、不记录任何日志
 - CLI：密钥完全本地，不经过任何第三方
+
+## 相关讨论
+
+| 社区 | 帖子 |
+|------|------|
+| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [假Claude辨别指南 - 如何辨别假Claude](https://linux.do/t/topic/1702676/8) |
+| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [Claude API中间商调查报告](https://linux.do/t/topic/1491552) |
+| <img src="https://linux.do/uploads/default/optimized/1X/9de0bc0a8b72d80eb1cde4aff7df7c3b4bfe7553_2_32x32.png" width="16" height="16" alt="L"> **Linux DO** | [教你识别假Claude反代服务](https://linux.do/t/topic/1628136/3) |
+| <img src="https://www.v2ex.com/static/img/favicon.png" width="16" height="16" alt="V2"> **V2EX** | [如何判断自己用的 Claude API 是否为真实模型](https://www.v2ex.com/t/1200135#reply53) |
+
+## 致谢
+
+感谢以上论坛的各位大佬们分享的检测思路和方式，本工具正是在这些讨论的基础上整理和实现的。特别感谢每一位研究过假模型特征、贡献了验证方法的社区成员。
 
 ## 许可证
 
